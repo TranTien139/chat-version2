@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      form { background: #000; padding: 3px; }
+      .sendmessage{position: fixed; bottom: 0px; width: 100%;}
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+      #contentWrap{display: none;}
+      .error{color: red;}
+      .wisper{color: gray; font-style: italic;}
+      .msg{color: blue;}
+    </style>
+  </head>
+  <body>
+  <div id="nickWrap">
+     <form id="setnick">
+     <p>enter your nickname</p>
+     <p id="nickError"></p>
+       <input type="text" id="nickname">
+       <button type="submit">name</button>
+     </form>
+  </div>
+   <div id="contentWrap">
+   <div class="chatWrap">
+    <ul id="messages"></ul>
+    <form action="" class="sendmessage">
+      <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+    </div>
+    <div id="users"></div>
+    </div>
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+      var socket = io();
+      var $nickname = $('#nickname');
+      var $users = $('#users');
+      var $nickError = $('#nickError');
+      $('#setnick').submit(function(e){
+        e.preventDefault();
+        socket.emit('new user', $nickname.val(), function(data){
+           if(data){
+              $('#nickWrap').hide();
+              $('#contentWrap').show();
+           }else{
+            $nickError.html('nick name error, please try again. ');
+           }
+        });
+        $nickname.val('');
+      });
+      socket.on('usernames', function(data){
+         var html = '';
+         for(var i=0; i< data.length; i++){
+          html += data[i]+'<br/>';
+         }
+         $users.html(html);
+      });
+      $('.sendmessage').submit(function(e){
+        e.preventDefault();
+        socket.emit('chat message', $('#m').val(), function(data){
+          $('#messages').append("<span class='error'>"+data+"</span></br>");
+        });
+        $('#m').val('');
+        return false;
+      });
+      socket.on('load old message', function(docs){
+        for(var i = 0; i< docs.length; i++){
+          displayData(docs[i]);
+        }
+      });
+      socket.on('new message', function(data){
+        displayData(data);
+      });
+
+      function displayData(data){
+        $('#messages').append("<span class='msg'><b>"+data.nick+":</b>"+data.msg+"</span></br>");
+      }
+
+      socket.on('whisper', function(data){
+        $('#messages').append("<span class='whisper'><b>"+data.nick+":</b>"+data.msg+"</span></br>");
+      });
+    </script>
+  </body>
+</html>
